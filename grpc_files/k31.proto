@@ -1,0 +1,131 @@
+// Copyright 2019 The gRPC Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+//import "empty.proto";
+import "google/protobuf/empty.proto";
+
+package K31_grpcsrv;
+
+service PipeTracking {
+  rpc GetSignal (CaptureFilter) returns (stream CaptureSignal);
+  rpc SendResult (OcrResult) returns (google.protobuf.Empty);
+
+  rpc UpdatePLCData (google.protobuf.Empty) returns (stream ProductionData);
+  rpc SendPositionData (stream SituationData) returns (google.protobuf.Empty);
+}
+
+
+message ProductionData {
+  enum EOperation {
+    OP_NOOP = 0; // Neprobíhá zpracování
+    OP_BLINDDETECT = 1; // Hledání vývalku při nekorektním zavezení (neobsazeno/předek/zadek)
+    OP_ROLLIN = 2; // Zavážení sochoru do pily
+    OP_POS_DIV = 3; // Polohování na dělení
+    OP_POS_FRONT_FORW = 4; // Polohování na řez předku - neznačená zkouška nebo vodník
+    OP_POS_FRONT_BACKW = 5; // Polohování na řez předku - značená zkouška nebo vodník (návrat od ražení)
+    OP_POS_BACK = 6; // Polohování na řez zadku
+    OP_CUT_DIV = 7; // Dělení (následná informace o oddělení při odvozu?)
+    OP_CUT_FRONT = 8; // Řez předku (následná informace o odpadnutí odpadu/zkoušky/vodníka?)
+    OP_CUT_BACK = 9; // Řez zadku + shození (následná detekce shození odpadu?)
+  }
+
+  message PilaData {
+    bool Production = 2; // Probíhá zpracování vývalku
+    bool RoundProfile = 3; // Vývalek je kulatina
+    double Size = 4; // [mm] Rozměr kvadrátu nebo kulatiny
+    double Position = 5;  // [mm] Referenční poloha z PLC
+    double Speed = 6; // [m/s] Rychlost posunu
+    EOperation Operation = 7; // Probíhající operace
+    bool SawDown = 8; // Rameno pily se pohybuje dolů
+    bool SawUp = 9; // Rameno pily se pohybuje nahoru
+    bool AutoMode = 10; // Zpracování probíhá v automatickém režimu (zobrazení)
+  }
+
+  uint64 WD = 1; // Watchdog pro kontrolu aktivity
+  PilaData P1 = 2; // Data pro pilu 1 (levá polovina snímku)
+  PilaData P2 = 3; // Data pro pilu 2 (pravá polovina snímku)
+  double DropOffRampPos = 4; // [%] Poloha skluzu (50% střed)
+}
+
+message SituationData {
+  enum EStatus {
+    STAT_NODETECT = 0; // Na snímku není nic
+    STAT_PARTIAL_FRONT = 1; // Na snímku je viditelný předek vývalku (vývalek nahoru, konec dole)
+    STAT_PARTIAL_BACK = 2; // Na snímku je viditelný zadek vývalku (vývalek dolů, konec nahoře)
+    STAT_FULL = 3; // Vývalek zasahuje přes celý rozsah záběru - bez mezery
+    STAT_FULL_2SPLIT = 4; // Na snímku je vývalek a sochor - s mezerou
+  }
+  
+  message DetData {
+    double PosFront = 1; // [mm] Nalezená poloha předku
+    double PosBack = 2; // [mm] Nalezená poloha zadku
+    EStatus Status = 3; // Stav detekce
+    bool DropOff = 4; // Odřezek odpadl na stůl (držet do změny operace)
+    double Certainty = 5; // Jistota detekce sochoru
+    bool DetInFront = 6; // Virtuální fotonka - detekce sochoru před (nad) pilou
+    bool DetInBack = 7; // Virtuální fotonka - detekce sochoru za (pod) pilou
+  }
+
+  uint64 WD = 1; // Watchdog pro kontrolu aktivity
+  DetData P1 = 2; // Data z pily 1 (levá polovina snímku)
+  DetData P2 = 3; // Data z pily 2 (pravá polovina snímku)
+}
+
+message CaptureFilter {
+  enum ECaptureFilter {
+    CF_ALL = 0; // všechna značení
+    CF_Z1 = 1; // Značení 1
+    CF_Z2 = 2; // Značení 2
+    CF_Z3 = 3; // Značení 3
+  }
+  
+  ECaptureFilter Filter = 1; // Výběr zpráv, které budou zasílány
+}
+
+message CaptureSignal {
+    int32 IdCapture = 1; // Unikátní kód požadavku snímání
+    int32 IdKus = 2; // IdKus z L2 pro logování
+    int32 Marker = 3; // {1-3} Snímat kamerou pro dané zařízení
+    string RefLine1 = 4; // Text, který byl značen - 1. řádek
+    string RefLine2 = 5; // Text, který byl značen - 2. řádek
+}
+
+message OcrResult {
+  enum EMarkingStatus {
+    MRK_NONE = 0; // Nebylo nalezeno ražení
+    MRK_OK = 1; // Text nalezen celý a je OK
+    MRK_WRONG = 2; // Text nalezen celý a nesouhlasí s kontrolou
+    MRK_PART = 3; // Chybí část textu
+    MRK_DEFORMED = 4; // Deformovaný text
+    MRK_CAM = 5; // Chyba kamery / spojení
+    MRK_BLUR = 6; // Snímek je rozmazán pohybem / nezaostřen(?)
+    MRK_ERROR = 7; // Jiná chyba
+  }
+  
+  enum ELogoStatus {
+    LG_NONE = 0; // Logo nebylo nalezeno
+    LG_Part = 1; // Logo oraženo částečně
+    LG_FULL = 2; // Logo je oraženo v pořádku
+  }
+
+  int32 IdCapture = 1; // Id výsledku shodující se s požadavkem
+  int32 IdKus = 2; // IdKus z L2 pro logování
+  string ResultLine1 = 3; // Rozpoznaný text - 1. řádek
+  string ResultLine2 = 4; // Rozpoznaný text - 2. řádek
+  EMarkingStatus Result = 5; // Výsledný stav OCR
+  optional string ResultStr = 6; // Doplňující stavový text provedeného OCR
+  ELogoStatus LogoStatus = 7; // Přítomnost loga
+}

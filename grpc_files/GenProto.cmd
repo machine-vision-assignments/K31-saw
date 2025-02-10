@@ -1,0 +1,3 @@
+K31_grpc\packages\Grpc.Tools\2.62.0\tools\windows_x64\protoc.exe -I K31_grpc\grpc  --csharp_out K31_grpc\grpc --grpc_out K31_grpc\grpc --plugin=protoc-gen-grpc=K31_grpc\packages\Grpc.Tools\2.62.0\tools\windows_x64\grpc_csharp_plugin.exe --proto_path=.\ --proto_path=K31_grpc\packages\Grpc.Tools\2.62.0\build\native\include --proto_path=K31_grpc\packages\Grpc.Tools\2.62.0\build\native\include\google\protobuf k31.proto
+
+python -m grpc_tools.protoc -I.\ -IK31_grpc\packages\Grpc.Tools\2.62.0\build\native\include -IK31_grpc\packages\Grpc.Tools\2.62.0\build\native\include\google\protobuf --python_out=.\K31_py --pyi_out=.\K31_py --grpc_python_out=.\K31_py k31.proto

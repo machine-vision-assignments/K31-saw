@@ -1,0 +1,61 @@
+@startuml
+participant Server
+participant Tracking
+participant OCR
+participant UI
+
+Server <- Tracking: SituationData
+note left
+  Budeme tady posílat obrázky?
+  Nebo vlastní stream?
+end note
+activate Server
+activate Tracking
+Server --> Tracking: google.protobuf.Empty
+deactivate Server
+deactivate Tracking
+
+Server <- Tracking: google.protobuf.Empty
+activate Server
+activate Tracking
+Server --> Tracking: ProductionData
+deactivate Server
+deactivate Tracking
+
+Server <- UI: TrackingOperatorSignals (recording?)
+note left
+  Možnost spustit nahrávání
+end note
+activate Server
+activate UI
+Server -->  UI: TrackingImages
+deactivate Server
+deactivate UI
+
+
+Server <- OCR:  google.protobuf.Empty
+activate Server
+activate OCR
+Server -->  OCR: CaptureSignal
+deactivate Server
+deactivate OCR
+
+Server <- OCR: Images, results
+activate Server
+activate OCR
+Server -->  OCR: google.protobuf.Empty
+deactivate Server
+deactivate OCR
+
+Server <- UI: OCROperatorSignal (?)
+note left
+  Možnost spustit nahrávání?
+  Nebo něco podobného?
+end note
+activate Server
+activate UI
+Server -->  UI: OCRImages
+deactivate Server
+deactivate UI
+
+@enduml
