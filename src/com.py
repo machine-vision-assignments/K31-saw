@@ -88,8 +88,8 @@ class Com():
                 Status=k31_pb2.SituationData.EStatus.Value(P1.status),
                 DropOff=False,
                 Certainty=0,
-                DetInFront=P1.zone.photocells[0].active,
-                DetInBack=P1.zone.photocells[1].active
+                DetInFront=False,
+                DetInBack=False
             ),
             P2=k31_pb2.SituationData.DetData(
                 PosFront=P2.pos_front,
@@ -97,8 +97,8 @@ class Com():
                 Status=k31_pb2.SituationData.EStatus.Value(P2.status),
                 DropOff=False,
                 Certainty=0,
-                DetInFront=P2.zone.photocells[0].active,
-                DetInBack=P2.zone.photocells[1].active
+                DetInFront=False,
+                DetInBack=False
             ),
         )
 

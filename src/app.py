@@ -3,7 +3,6 @@ import cv2 as cv
 
 from src.recorder import Recorder
 from src.com import Com
-from src.fake_com import FakeCom
 from src.scene import Scene
 
 from settings import PRODUCTION, GRPC_ADDRESS, WINDOW_POSITION, RECORD_PATH
@@ -13,9 +12,10 @@ class App():
 
     def __init__(self):
         if PRODUCTION:
-            self.com = Com(GRPC_ADDRESS)
+            self.com = Com(GRPC_ADDRESS) # TODO fix the address
         else:
-            self.com = FakeCom(RECORD_PATH + ".json")
+            from src.fake_com import FakeCom
+            self.com = FakeCom()
 
         self.scene = Scene()
         self.recorder = Recorder()
@@ -27,7 +27,7 @@ class App():
             cv.moveWindow(self.window_name, WINDOW_POSITION[0], WINDOW_POSITION[1])
 
     def update(self):
-        # self.recorder.feed(frame, self.remote_data)
+        # self.recorder.feed(frame, self.remote_data) # TODO fix
 
         frame = self.scene.update()
 
@@ -46,52 +46,29 @@ class App():
         image = frame.copy()
         size = frame.shape[0:2]
 
-        cv.imshow(self.window_name, image)
-        key = cv.waitKey(1)
+
         # if key == 32:
         #     self.recorder.switch(self.remote_data)
-        
-        
-    #
-    #     for zone in self.zones:
-    #         # pts = np.array([[10,5],[20,30],[70,20],[50,10]], np.int32)
-    #         pts = zone.pts.reshape((-1,1,2))
-    #         cv.polylines(image, [pts], True,(0,255,255))
-    #
-    #
-    #     for item in self.items:
-    #         bbox, score, label = item.unpack()
-    #         bbox = bbox.round().astype(np.int32)
-    #         cls_id = int(label)
-    #         cls = self.CLASSES[cls_id]
-    #
-    #         # cv.circle(image, bbox[[0, 3]], 5, (255, 255, 255), -1)
-    #
-    #         if item.zone == None:
-    #             color = (0, 0, 255)
-    #         else:
-    #             color = item.zone.color
-    #
-    #         thick = 3 if item.used else 1
-    #         cv.rectangle(image, tuple(bbox[:2]), tuple(bbox[2:]), color, thick)
-    #         cv.putText(image,
-    #                    f'{cls}:{int(score * 100)}', (bbox[0], bbox[1] - 2),
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.60, [225, 255, 255],
-    #                    thickness=1)
-    #
-    #     for zone in self.zones:
-    #         cv.putText(image,
-    #                    f'{zone.name}  {zone.zone_model.status}', zone.params["text_box"],
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.5, [0, 255, 0],
-    #                    thickness=2)
-    #         cv.putText(image,
-    #                    f'{zone.zone_model.pos_back}, {zone.zone_model.pos_front}',
-    #                    (zone.params["text_box"][0], zone.params["text_box"][1] + 25),
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.5, [0, 255, 0],
-    #                    thickness=2)
+
+
+
+
+        for zone in self.scene.zones:
+
+            cv.putText(image,
+                       f'{zone.name}  {zone.get_status_text()}', zone.text_box,
+                       cv.FONT_HERSHEY_SIMPLEX,
+                       0.5, [0, 255, 0],
+                       thickness=2)
+            # cv.putText(image,
+            #            f'{zone.zone_model.pos_back}, {zone.zone_model.pos_front}',
+            #            (zone.params["text_box"][0], zone.params["text_box"][1] + 25),
+            #            cv.FONT_HERSHEY_SIMPLEX,
+            #            0.5, [0, 255, 0],
+            #            thickness=2)
+
+
+
     #
     #     if self.recorder.running:
     #         cv.circle(image, (30, 380), 15, (0, 0, 255), -1)
@@ -119,34 +96,37 @@ class App():
     #         cv.arrowedLine(image, pa, pb,
     #                                 (0, 255, 0), 5, tipLength=0.5)
     #
-    #     if self.remote_data["P1"].get("AutoMode", False):
-    #         cv.putText(image,
-    #                    f'AUTO', (10, 460),
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.60, [0, 255, 0],
-    #                    thickness=2)
-    #     else:
-    #         cv.putText(image,
-    #                    f'MAN', (10, 460),
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.60, [19, 166, 250],
-    #                    thickness=2)
-    #
-    #     if self.remote_data["P2"].get("AutoMode", False):
-    #         cv.putText(image,
-    #                    f'AUTO', (400, 460),
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.60, [0, 255, 0],
-    #                    thickness=2)
-    #     else:
-    #         cv.putText(image,
-    #                    f'MAN', (400, 460),
-    #                    cv.FONT_HERSHEY_SIMPLEX,
-    #                    0.60, [19, 166, 250],
-    #                    thickness=2)
+        if self.remote_data["P1"].get("AutoMode", False):
+            cv.putText(image,
+                       f'AUTO', (10, 460),
+                       cv.FONT_HERSHEY_SIMPLEX,
+                       0.60, [0, 255, 0],
+                       thickness=2)
+        else:
+            cv.putText(image,
+                       f'MAN', (10, 460),
+                       cv.FONT_HERSHEY_SIMPLEX,
+                       0.60, [19, 166, 250],
+                       thickness=2)
+
+        if self.remote_data["P2"].get("AutoMode", False):
+            cv.putText(image,
+                       f'AUTO', (400, 460),
+                       cv.FONT_HERSHEY_SIMPLEX,
+                       0.60, [0, 255, 0],
+                       thickness=2)
+        else:
+            cv.putText(image,
+                       f'MAN', (400, 460),
+                       cv.FONT_HERSHEY_SIMPLEX,
+                       0.60, [19, 166, 250],
+                       thickness=2)
     #
     #     name = f"{self.window_name}"
     #     cv.imshow(name, image)
     #     key = cv.waitKey(1)
     #     if key == 32:
     #         self.recorder.switch(self.remote_data)
+
+        cv.imshow(self.window_name, image)
+        key = cv.waitKey(1)

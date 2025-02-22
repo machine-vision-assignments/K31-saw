@@ -4,17 +4,15 @@ import numpy as np
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
-from src.items import Item
-
-class Ruler():
-
-    def __init__(self, coeffs, ruler):
-        self.zero = ruler[2]
-        self.c = np.array(coeffs)
-
-    def calc_distance(self, value):
-        value -= self.zero
-        return self.c[0] + (self.c[1] * value) + (self.c[2] * value ** 2)
+# class Ruler():
+#
+#     def __init__(self, coeffs, ruler):
+#         self.zero = ruler[2]
+#         self.c = np.array(coeffs)
+#
+#     def calc_distance(self, value):
+#         value -= self.zero
+#         return self.c[0] + (self.c[1] * value) + (self.c[2] * value ** 2)
 
 
 class PhotoCell():
